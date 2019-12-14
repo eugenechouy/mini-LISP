@@ -13,7 +13,6 @@
 %union {
     int     intVal;
 }
-%type <intVal> line
 %type <intVal> NUMBER
 %token NUMBER ADD SUB MUL MOD INC DEC LOAD
 

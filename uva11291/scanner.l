@@ -1,5 +1,5 @@
 %{
-#include "parser.tab.h"
+    #include "parser.tab.h" 
 %}
 
 %%
@@ -10,3 +10,4 @@
 \n                  {}
 .                   {}
 %%
+ 
