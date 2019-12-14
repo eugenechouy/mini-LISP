@@ -12,7 +12,8 @@
 %type <intVal> NUMBER 
 %type <mat> expr
 %type <mat> matrix
-%left <intVal> '+' '-' '*'
+%left <intVal> '+' '-'
+%left <intVal> '*'
 %token NUMBER TRANS 
 
 %% 
