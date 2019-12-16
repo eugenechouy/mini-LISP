@@ -20,8 +20,9 @@
 %token print-num print-bool
 %token number
 %token bool-val
+%token id
 
-%left '+' '-' '*' '/' mod '>' '<' '=' and or not define id fun if
+%left '+' '-' '*' '/' mod '>' '<' '=' and or not define fun if
 
 %%
 PROGRAM         : STMT STMTS {
