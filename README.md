@@ -3,7 +3,7 @@
 ## Type Definiation
 
 * Boolean: **#t** for true and **#f** for false
-* Number: Signed integer from −( $2^{31}$ ) to $2^{31}$
+* Number: Signed integer from −( 2^31 ) to 2^31
 * Function
 
 ## Operation
