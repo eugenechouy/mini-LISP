@@ -1,6 +1,11 @@
 %{
-    #include "parser.tab.h"
-    extern std::stack<string> type_stk;
+    #include "ASTNode.h"
+    #include "parser.tab.hh"
+    extern std::stack<ASTType> type_stk;
+
+    extern "C" {
+        extern int yylex();
+    }
 %}
 separator  [ \t\n\r]
 letter     [a-z]
@@ -10,7 +15,7 @@ id         {letter}({letter}|{digit}|"-")*
 bool-val   #[t|f]
 
 %%
-<<EOF>>     {}
+<<EOF>>     { return 0; }
 {separator} {}
 
 "+"         { return(yytext[0]); }
@@ -20,24 +25,24 @@ bool-val   #[t|f]
 ">"         { return(yytext[0]); }
 "<"         { return(yytext[0]); }
 "="         { return(yytext[0]); }
-"mod"       { return(mod); }
+"mod"       { return(_mod); }
 
-"and"       { return(and); }
-"or"        { return(or); }
-"not"       { return(not); }
+"and"       { return(_and); }
+"or"        { return(_or); }
+"not"       { return(_not); }
 
-"define"    { return(define); }
-"fun"       { return(fun); }
-"if"        { return(if); }
+"define"    { return(_define); }
+"fun"       { return(_fun); }
+"if"        { return(_if); }
 
-"print-num"  { type_stk.push("PRINT-NUM"); return(print-num); }
-"print-bool" { type_stk.push("PRINT-BOOL"); return(print-bool); }
+"print-num"  { type_stk.push(AST_PNUMBER); return(print_num); }
+"print-bool" { type_stk.push(AST_PBOOLVAL); return(print_bool); }
 
-{number}    { sscanf(yytext, "%d", &yylval.intVal); return(number); }
-{id}        { sscanf(yytext, "%s", &yylval.id); return(id); }
+{number}    { sscanf(yytext, "%d", &yylval.intVal); return(_number); }
+{id}        { sscanf(yytext, "%s", yylval.id); return(_id); }
 {bool-val}  { if(yytext[1] == 't') yylval.boolVal = true; 
               else yylval.boolVal = false; 
-              return(bool-val); 
+              return(_bool_val); 
             }
 
 .           { return(yytext[0]); }

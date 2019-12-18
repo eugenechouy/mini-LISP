@@ -1,18 +1,20 @@
 %{
         #include "ASTNode.h"
-        std::stack<string> type_stk;
-        ASTNode root;
+        std::stack<ASTType> type_stk;
+        ASTNode *root;
         ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2);
+        ASTVal* ASTVisit(ASTNode *current);
 
         extern "C" {
-                extern int yylex();
-                void yyerror(const char *message);
+            extern int yylex();
+            void yyerror(const char *message);
         }
 %}
 %union {
-        int intVal;
-        bool boolVal;
-        string id;
+    int intVal;
+    bool boolVal;
+    char* id;
+    ASTNode *node;
 }
 
 /*
@@ -26,62 +28,62 @@
 %type<intVal> PLUS MINUS MULTIPLY DIVIDE MODULES GREATER SMALLER EQUAL
 */
 
-%type<ASTNode> PROGRAM 
-%type<ASTNode> STMT STMTS PRINT_STMT
-%type<ASTNode> EXP EXPS 
+%type<node> PROGRAM 
+%type<node> STMT STMTS PRINT_STMT
+%type<node> EXP EXPS 
 
 %token print_num print_bool
-%token<intVal> number
-%token<boolVal> bool_val
-%token<id> id
+%token<intVal> _number
+%token<boolVal> _bool_val
+%token<id> _id
 
-%left '+' '-' '*' '/' mod '>' '<' '=' and or not define fun if
+%left '+' '-' '*' '/' _mod '>' '<' '=' _and _or _not _define _fun _if
 
 %%
 PROGRAM         : STMT STMTS {
-                        type_stk.push(AST_ROOT);
-                        $$ = constructAST($1, $2);
-                        root = $$;
+                    type_stk.push(AST_ROOT);
+                    $$ = constructAST($1, $2);
+                    root = $$;
                 }
                 ;
 STMTS           : STMT STMTS {
-                        type_stk.push(AST_ROOT);
-                        $$ = constructAST($1, $2);
+                    type_stk.push(AST_ROOT);
+                    $$ = constructAST($1, $2);
                 }
                 | {
-                        type_stk.push(AST_NULL);
-                        $$ = constructAST(NULL, NULL);
+                    type_stk.push(AST_NULL);
+                    $$ = constructAST(NULL, NULL);
                 }
                 ;
 /* STMT            : EXP | DEF_STMT | PRINT_STMT ; */
 STMT            : PRINT_STMT ;
 
 PRINT_STMT      : '(' print_num EXP ')' {
-                        $$ = constructAST($3, NULL);
+                    $$ = constructAST($3, NULL);
                 }
                 | '(' print_bool EXP ')' {
-                        $$ = constructAST($3, NULL);
+                    $$ = constructAST($3, NULL);
                 }
                 ;
 EXPS            : EXP EXPS {
-
+                    
                 }
                 | {
-
+                    
                 }
                 ;
-/* EXP             : bool_val | number | VARIABLE | NUM_OP | LOGICAL_OP | FUN_EXP | FUN_CALL | IF_EXP ; */
-EXP             : bool_val {
-                        ASTBoolVal *new_node = (ASTBoolVal *)malloc(sizeof(ASTBoolVal));
-                        new_node->type = AST_BOOLVAL;
-                        new_node->bool_val = $1;
-                        $$ = (AST_NODE*)new_node;
+/* EXP             : _bool_val | _number | VARIABLE | NUM_OP | LOGICAL_OP | FUN_EXP | FUN_CALL | IF_EXP ; */
+EXP             : _bool_val {
+                    ASTBoolVal *new_node = (ASTBoolVal*)malloc(sizeof(ASTBoolVal));
+                    new_node->type = AST_BOOLVAL;
+                    new_node->bool_val = $1;
+                    $$ = (ASTNode*)new_node;
                 }
-                | number {
-                        ASTNumber *new_node = (ASTNumber *)malloc(sizeof(ASTNumber));
-                        new_node->type = AST_NUMBER;
-                        new_node->number = $1;
-                        $$ = (AST_NODE*)new_node;
+                | _number {
+                    ASTNumber *new_node = (ASTNumber*)malloc(sizeof(ASTNumber));
+                    new_node->type = AST_NUMBER;
+                    new_node->number = $1;
+                    $$ = (ASTNode*)new_node;
                 }
                 ;
 
@@ -91,19 +93,19 @@ NUM_OP          : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER
         MINUS   : '(' '-' EXP EXP ')' { };
         MULTIPLY: '(' '*' EXP EXP EXPS ')' { };
         DIVIDE  : '(' '/' EXP EXP ')' { };
-        MODULES : '(' mod EXP EXP ')' { };
+        MODULES : '(' _mod EXP EXP ')' { };
         GREATER : '(' '>' EXP EXP ')' { };
         SMALLER : '(' '<' EXP EXP ')' { };
         EQUAL   : '(' '=' EXP EXP EXPS ')' { };
 LOGICAL_OP      : AND_OP | OR_OP | NOT_OP ;
-        AND_OP  : '(' and EXP EXP EXPS ')' { };
-        OR_OP   : '(' or EXP EXP EXPS ')' { };
-        NOT_OP  : '(' not EXP ')' { };
-DEF_STMT        : '(' define VARIABLE EXP ')' {
+        AND_OP  : '(' _and EXP EXP EXPS ')' { };
+        OR_OP   : '(' _or EXP EXP EXPS ')' { };
+        NOT_OP  : '(' _not EXP ')' { };
+DEF_STMT        : '(' _define VARIABLE EXP ')' {
 
                 }
                 ;
-        VARIABLE: id { 
+        VARIABLE: _id { 
 
                 }
                 ;
@@ -115,7 +117,7 @@ DEF_STMT        : '(' define VARIABLE EXP ')' {
                 }
                 ;
 
-FUN_EXP         : '(' fun FUN_ID FUN_BODY ')' {
+FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
 
                 }
                 ;
@@ -134,7 +136,7 @@ FUN_EXP         : '(' fun FUN_ID FUN_BODY ')' {
 
                 }
                 ;
-        FUN_NAME: id {
+        FUN_NAME: _id {
 
                 }
                 ;
@@ -154,7 +156,7 @@ FUN_EXP         : '(' fun FUN_ID FUN_BODY ')' {
                 }
                 ;
 
-IF_EXP          : '(' if TEST_EXP THAN_EXP ELSE_EXP ')'
+IF_EXP          : '(' _if TEST_EXP THAN_EXP ELSE_EXP ')'
         TEST_EXP: EXP {
 
                 }
@@ -171,12 +173,41 @@ IF_EXP          : '(' if TEST_EXP THAN_EXP ELSE_EXP ')'
 %%
 
 ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2){
-        ASTNode *new_node = (ASTNode *)malloc(sizeof(ASTNode));
+        ASTNode *new_node = (ASTNode*)malloc(sizeof(ASTNode));
         new_node->type = type_stk.top();
         type_stk.pop();
         new_node->left = exp1;
         new_node->right = exp2;
         return new_node;
+}
+
+ASTVal* ASTVisit(ASTNode *current){
+    ASTVal *ret = (ASTVal*)malloc(sizeof(ASTVal));
+    switch(current->type){
+        case AST_ROOT:
+            ASTVisit(current->left);
+            ASTVisit(current->right);
+            break;
+        case AST_NULL:
+            break;
+        case AST_NUMBER:
+            ret->number = ((ASTNumber*)current)->number;
+            break;
+        case AST_BOOLVAL:
+            ret->bool_val = ((ASTBoolVal*)current)->bool_val;
+            break;
+        case AST_PNUMBER:
+            ret = ASTVisit(current->left);
+            std::cout << ret->number << "\n";
+            break;
+        case AST_PBOOLVAL:
+            ret = ASTVisit(current->left);
+            std::cout << (ret->bool_val ? "#t" : "#f" ) << "\n";
+            break;
+        default:
+            std::cout << "error!\n";
+    }
+    return ret;
 }
 
 void yyerror(const char *message) {
@@ -185,5 +216,6 @@ void yyerror(const char *message) {
 
 int main(int argc, char *argv[]) {
         yyparse();
+        ASTVisit(root);
         return(0);
 }

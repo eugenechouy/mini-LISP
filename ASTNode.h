@@ -8,23 +8,30 @@
 
 enum ASTType {
     AST_ROOT, AST_NULL, 
-    AST_BOOLVAL, AST_NUMBER
+    AST_BOOLVAL, AST_NUMBER,
+    AST_PNUMBER, AST_PBOOLVAL,
 };
 
 class ASTNode {
 public:
-    std::ASTType type;
+    ASTType type;
     ASTNode *left, *right;
 };
 
-class ASTNumber : ASTNode{
+class ASTVal : public ASTNode{
+public:
+    int number;
+    bool bool_val;
+};
+
+class ASTNumber : public ASTNode{
 public:
     int number;
 };
 
-class ASTBoolVal : ASTNode{
+class ASTBoolVal : public ASTNode{
 public:
-    int bool_val;
+    bool bool_val;
 };
 
 
