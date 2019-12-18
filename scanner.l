@@ -1,10 +1,9 @@
 %{
     #include "ASTNode.h"
     #include "parser.tab.hh"
-    extern std::stack<ASTType> type_stk;
 
     extern "C" {
-        extern int yylex();
+        int yylex();
     }
 %}
 separator  [ \t\n\r]
@@ -18,14 +17,14 @@ bool-val   #[t|f]
 <<EOF>>     { return 0; }
 {separator} {}
 
-"+"         { return(yytext[0]); }
-"-"         { return(yytext[0]); }
-"*"         { return(yytext[0]); }
-"/"         { return(yytext[0]); }
-">"         { return(yytext[0]); }
-"<"         { return(yytext[0]); }
-"="         { return(yytext[0]); }
-"mod"       { return(_mod); }
+"+"         { type_stk.push(AST_PLUS); return(yytext[0]); }
+"-"         { type_stk.push(AST_MINUS); return(yytext[0]); }
+"*"         { type_stk.push(AST_MULTIPLY); return(yytext[0]); }
+"/"         { type_stk.push(AST_DIVIDE); return(yytext[0]); }
+">"         { type_stk.push(AST_GREATER); return(yytext[0]); }
+"<"         { type_stk.push(AST_SMALLER); return(yytext[0]); }
+"="         { type_stk.push(AST_EQUAL); return(yytext[0]); }
+"mod"       { type_stk.push(AST_MODULES); return(_mod); }
 
 "and"       { return(_and); }
 "or"        { return(_or); }

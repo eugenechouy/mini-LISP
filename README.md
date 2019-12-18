@@ -35,3 +35,30 @@ number     0|[1-9]{digit}*|-[1-9]{digit}*
 ID         {letter}({letter}|{digit}|"-")*
 bool-val   #[t|f]
 ```
+
+## Grammar and Behavior
+
+1. Program
+```
+PROGRAM : STMT STMTS
+STMTS   : STMT STMTS | {}
+STMT    : EXP | DEF-STMT | PRINT-STMT
+```
+
+2. Print
+```
+PRINT_STMT : '(' print_num EXP ')' 
+           | '(' print_bool EXP ')'
+```
+
+3. Expression
+```
+EXPS  : EXP EXPS | {}
+EXP   : bool_val | number | VARIABLE | NUM_OP | LOGICAL_OP | FUN_EXP | FUN_CALL | IF_EXP 
+```
+
+4. Numerical Operations 
+
+```
+NUM_OP : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER | EQUAL
+```

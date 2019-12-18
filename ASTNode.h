@@ -7,9 +7,10 @@
 #include <cstdio>
 
 enum ASTType {
-    AST_ROOT, AST_NULL, 
+    AST_ROOT,
     AST_BOOLVAL, AST_NUMBER,
     AST_PNUMBER, AST_PBOOLVAL,
+    AST_PLUS, AST_MINUS, AST_MULTIPLY, AST_DIVIDE, AST_MODULES, AST_GREATER, AST_SMALLER, AST_EQUAL
 };
 
 class ASTNode {
@@ -34,5 +35,6 @@ public:
     bool bool_val;
 };
 
+extern std::stack<ASTType> type_stk;
 
 #endif
