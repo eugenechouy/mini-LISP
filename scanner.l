@@ -26,19 +26,19 @@ bool-val   #[t|f]
 "="         { type_stk.push(AST_EQUAL); return(yytext[0]); }
 "mod"       { type_stk.push(AST_MODULES); return(_mod); }
 
-"and"       { return(_and); }
-"or"        { return(_or); }
-"not"       { return(_not); }
+"and"       { type_stk.push(AST_AND); return(_and); }
+"or"        { type_stk.push(AST_OR); return(_or); }
+"not"       { type_stk.push(AST_NOT); return(_not); }
 
-"define"    { return(_define); }
-"fun"       { return(_fun); }
-"if"        { return(_if); }
+"define"    { type_stk.push(AST_DEFINE); return(_define); }
+"fun"       { type_stk.push(AST_FUN); return(_fun); }
+"if"        { type_stk.push(AST_IF); return(_if); }
 
 "print-num"  { type_stk.push(AST_PNUMBER); return(print_num); }
 "print-bool" { type_stk.push(AST_PBOOLVAL); return(print_bool); }
 
 {number}    { sscanf(yytext, "%d", &yylval.intVal); return(_number); }
-{id}        { sscanf(yytext, "%s", yylval.id); return(_id); }
+{id}        { yylval.id = strdup(yytext); return(_id); }
 {bool-val}  { if(yytext[1] == 't') yylval.boolVal = true; 
               else yylval.boolVal = false; 
               return(_bool_val); 

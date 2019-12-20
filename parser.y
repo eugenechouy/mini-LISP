@@ -2,11 +2,13 @@
         #include "ASTNode.h"
        
         std::stack<ASTType> type_stk;
+        std::map<std::string, ASTNode*> id_map;
         ASTNode *root;
         ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3);
         ASTVal* ASTVisit(ASTNode *current);
         int calNumber(ASTNode *current);
         bool calLogic(ASTNode *current);
+        void defineID(ASTNode *current);
         
         extern "C" {
             extern int yylex();
@@ -26,15 +28,17 @@
 %type<intVal> EXP EXPS  
 %type<intVal> IF_EXP THAN_EXP ELSE_EXP
 %type<intVal> VARIABLE VARIABLES
-%type<intVal> NUM_OP LOGICAL_OP AND_OP OR_OP NOT_OP
+%type<intVal> NUM_OP LOGICAL_OP 
 %type<intVal> FUN_EXP FUN_CALL FUN_ID FUN_BODY FUN_NAME PARAM PARAMS
 */
 
 %type<node> PROGRAM 
-%type<node> STMT STMTS PRINT_STMT
+%type<node> STMT STMTS PRINT_STMT DEF_STMT
 %type<node> EXP EXPS 
-%type<node> NUM_OP
+%type<node> NUM_OP LOGICAL_OP 
 %type<node> PLUS MINUS MULTIPLY DIVIDE MODULES GREATER SMALLER EQUAL
+%type<node> AND_OP OR_OP NOT_OP
+%type<node> VARIABLE
 
 %token print_num print_bool
 %token<intVal> _number
@@ -58,8 +62,7 @@ STMTS           : STMT STMTS {
                     $$ = NULL; 
                 }
                 ;
-/* STMT            : EXP | DEF_STMT | PRINT_STMT ; */
-STMT            : EXP | PRINT_STMT ;
+STMT            : EXP | DEF_STMT | PRINT_STMT ;
 
 PRINT_STMT      : '(' print_num EXP ')' {
                     type_stk.push(AST_PNUMBER); 
@@ -94,7 +97,7 @@ EXP             : _bool_val {
                     new_node->number = $1;
                     $$ = (ASTNode*)new_node;
                 }
-                | NUM_OP
+                | NUM_OP | LOGICAL_OP | VARIABLE
                 ;
 NUM_OP          : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER | EQUAL ;
         PLUS    : '(' '+' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
@@ -106,27 +109,23 @@ NUM_OP          : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER
         SMALLER : '(' '<' EXP EXP ')' { $$ = constructAST($3, $4, NULL); };
         EQUAL   : '(' '=' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
 
-/*
 LOGICAL_OP      : AND_OP | OR_OP | NOT_OP ;
-        AND_OP  : '(' _and EXP EXP EXPS ')' { };
-        OR_OP   : '(' _or EXP EXP EXPS ')' { };
-        NOT_OP  : '(' _not EXP ')' { };
-DEF_STMT        : '(' _define VARIABLE EXP ')' {
+        AND_OP  : '(' _and EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
+        OR_OP   : '(' _or EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
+        NOT_OP  : '(' _not EXP ')' { $$ = constructAST($3, NULL, NULL); };
 
+DEF_STMT        : '(' _define VARIABLE EXP ')' {
+                    $$ = constructAST($3, $4, NULL);
                 }
                 ;
         VARIABLE: _id { 
-
+                    ASTId *new_node = (ASTId*)malloc(sizeof(ASTId));
+                    new_node->type = AST_ID;
+                    new_node->id = std::string($1);
+                    $$ = (ASTNode*)new_node;
                 }
                 ;
-        VARIABLES: VARIABLE VARIABLES {
-
-                }
-                | {
-
-                }
-                ;
-
+/*
 FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
 
                 }
@@ -165,6 +164,13 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
 
                 }
                 ;
+        VARIABLES: VARIABLE VARIABLES {
+
+                }
+                | {
+
+                }
+                ;
 
 IF_EXP          : '(' _if TEST_EXP THAN_EXP ELSE_EXP ')'
         TEST_EXP: EXP {
@@ -200,7 +206,7 @@ ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3){
 }
 
 int calNumber(ASTNode *current){
-    if(!current) return 1   ;
+    if(!current) return 1;
     int ret;
     switch(current->type){
         case AST_PLUS:
@@ -233,28 +239,61 @@ int calNumber(ASTNode *current){
         case AST_GREATER:
             ret = ( calNumber(current->left) < calNumber(current->right) ? 0 : 1 );
             break;
-        case AST_EQUAL:
-            if(current->right)
-                ret = ( calNumber(current->left) == calNumber(current->right) ? 1 : 0 );
-            else 
-                ret = 1;
+        case AST_ID:
+            ret = ASTVisit(current)->number;
             break;
     }
     return ret;
 }
 
 bool calLogic(ASTNode *current){
+    if(!current) return true;
     bool ret;
     switch(current->type){
+        case AST_AND:
+            ret = calLogic(current->left) && calLogic(current->right);
+            break;
+        case AST_OR:
+            if(current->right)
+                ret = calLogic(current->left) || calLogic(current->right);
+            else 
+                ret = calLogic(current->left);
+            break;
+        case AST_NOT:
+            ret = !calLogic(current->left);
+            break;
         case AST_GREATER:
         case AST_SMALLER:
-        case AST_EQUAL:
             ret = calNumber(current);
+            break;
+        case AST_EQUAL:
+            if(current->right){
+                if(calNumber(current->left) == calNumber(current->right->left))
+                    ret = calLogic(current->right);
+                else 
+                    ret = false;
+            }
+            else
+                ret = true;
             break;
         case AST_BOOLVAL:
             ret = ((ASTBoolVal*)current)->bool_val;
             break;
+        case AST_ID:
+            ret = ASTVisit(current)->bool_val;
+            break;
     }
+    return ret;
+}
+
+void defineID(ASTNode *current){
+    std::string defID = ((ASTId*)current->left)->id;
+    if(id_map[defID]){
+        std::cout << "Redefined id: defID\n";
+        exit(0);
+    }
+    else 
+        id_map[defID] = current->right;
 }
 
 ASTVal* ASTVisit(ASTNode *current){
@@ -280,14 +319,21 @@ ASTVal* ASTVisit(ASTNode *current){
         case AST_MODULES:
         case AST_NUMBER:
             ret->number = calNumber(current);
-            std::cout << ret->number << "\n";
             break;
         case AST_GREATER:
         case AST_SMALLER:
         case AST_EQUAL:
+        case AST_AND:
+        case AST_OR:
+        case AST_NOT:
         case AST_BOOLVAL:
-            ret->bool_val = ((ASTBoolVal*)current)->bool_val;
-            std::cout << (ret->bool_val ? "#t" : "#f" ) << "\n";
+            ret->bool_val = calLogic(current);
+            break;
+        case AST_DEFINE:
+            defineID(current);
+            break;
+        case AST_ID:
+            ret = ASTVisit(id_map[((ASTId*)current)->id]);
             break;
         default:
             std::cout << "error!\n";
