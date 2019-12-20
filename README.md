@@ -75,3 +75,9 @@ LOGICAL_OP : AND_OP | OR_OP | NOT_OP
 DEF_STMT : '(' define VARIABLE EXP ')'
 VARIABLE : id 
 ```
+
+7. Function
+
+```
+
+```

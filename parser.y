@@ -2,12 +2,13 @@
         #include "ASTNode.h"
        
         std::stack<ASTType> type_stk;
-        std::map<std::string, ASTNode*> id_map;
+        std::map<std::string, ASTNode*> global_id_map;
         ASTNode *root;
         ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3);
-        ASTVal* ASTVisit(ASTNode *current);
-        int calNumber(ASTNode *current);
-        bool calLogic(ASTNode *current);
+        ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
+        ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*> &local_id_map);
+        int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
+        bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
         void defineID(ASTNode *current);
         
         extern "C" {
@@ -38,7 +39,9 @@
 %type<node> NUM_OP LOGICAL_OP 
 %type<node> PLUS MINUS MULTIPLY DIVIDE MODULES GREATER SMALLER EQUAL
 %type<node> AND_OP OR_OP NOT_OP
-%type<node> VARIABLE
+%type<node> VARIABLE VARIABLES
+%type<node> PARAM PARAMS
+%type<node> FUN_EXP FUN_CALL FUN_ID FUN_BODY FUN_NAME
 
 %token print_num print_bool
 %token<intVal> _number
@@ -84,7 +87,7 @@ EXPS            : EXP EXPS {
                     $$ = NULL; 
                 }
                 ;
-/* EXP             : _bool_val | _number | VARIABLE | NUM_OP | LOGICAL_OP | FUN_EXP | FUN_CALL | IF_EXP ; */
+/* EXP             :  | IF_EXP ; */
 EXP             : _bool_val {
                     ASTBoolVal *new_node = (ASTBoolVal*)malloc(sizeof(ASTBoolVal));
                     new_node->type = AST_BOOLVAL;
@@ -97,7 +100,7 @@ EXP             : _bool_val {
                     new_node->number = $1;
                     $$ = (ASTNode*)new_node;
                 }
-                | NUM_OP | LOGICAL_OP | VARIABLE
+                | NUM_OP | LOGICAL_OP | VARIABLE | FUN_EXP | FUN_CALL
                 ;
 NUM_OP          : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER | EQUAL ;
         PLUS    : '(' '+' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
@@ -125,53 +128,51 @@ DEF_STMT        : '(' _define VARIABLE EXP ')' {
                     $$ = (ASTNode*)new_node;
                 }
                 ;
-/*
+
 FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
-
+                    $$ = constructAST($3, $4, NULL);
                 }
                 ;
-        FUN_ID  : '(' VARIABLE VARIABLES ')' {
-
+        FUN_ID  : '(' VARIABLES ')' {
+                    $$ = $2;
                 }
                 ;
-        FUN_BODY: EXP {
+        FUN_BODY: EXP 
+                ;
+        FUN_CALL: '(' FUN_EXP PARAMS ')' {
+                    type_stk.push(AST_FUN_DEF_CALL);
+                    $$ = constructAST($2, $3, NULL);
 
+                }
+                | '(' FUN_NAME PARAMS ')' {
+                    type_stk.push(AST_FUN_CALL);
+                    $$ = constructAST($2, $3, NULL);
                 }
                 ;
-        FUN_CALL: '(' FUN_EXP PARAM PARAMS ')' {
-
-                }
-                | '(' FUN_NAME PARAM PARAMS ')' {
-
-                }
+        FUN_NAME: VARIABLE 
                 ;
-        FUN_NAME: _id {
-
-                }
-                ;
-        PARAM   : EXP {
-
-                }
+        PARAM   : EXP 
                 ;
         PARAMS : PARAM PARAMS {
-
+                    type_stk.push(AST_NUMBER);
+                    $$ = constructAST($1, $2, NULL);
                 }
                 | {
-
+                    $$ = NULL;
                 }
                 ;
-        LAST_EXP: EXP {
-
-                }
+        LAST_EXP: EXP 
                 ;
         VARIABLES: VARIABLE VARIABLES {
-
+                    type_stk.push(AST_ID);
+                    $$ = constructAST($1, $2, NULL);
                 }
                 | {
-
+                    $$ = NULL;
                 }
                 ;
 
+/*
 IF_EXP          : '(' _if TEST_EXP THAN_EXP ELSE_EXP ')'
         TEST_EXP: EXP {
 
@@ -205,71 +206,71 @@ ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3){
     return new_node;
 }
 
-int calNumber(ASTNode *current){
+int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     if(!current) return 1;
     int ret;
     switch(current->type){
         case AST_PLUS:
             if(current->right)
-                ret = calNumber(current->left) + calNumber(current->right);
+                ret = calNumber(current->left, local_id_map) + calNumber(current->right, local_id_map);
             else
-                ret = calNumber(current->left);
+                ret = calNumber(current->left, local_id_map);
             break;
         case AST_MINUS:
-            ret = calNumber(current->left) - calNumber(current->right);
+            ret = calNumber(current->left, local_id_map) - calNumber(current->right, local_id_map);
             break;
         case AST_MULTIPLY:
             if(current->right)
-                ret = calNumber(current->left) * calNumber(current->right);
+                ret = calNumber(current->left, local_id_map) * calNumber(current->right, local_id_map);
             else
-                ret = calNumber(current->left);
+                ret = calNumber(current->left, local_id_map);
             break;
         case AST_DIVIDE:
-            ret = calNumber(current->left) / calNumber(current->right);
+            ret = calNumber(current->left, local_id_map) / calNumber(current->right, local_id_map);
             break;
         case AST_MODULES:
-            ret = calNumber(current->left) % calNumber(current->right);
+            ret = calNumber(current->left, local_id_map) % calNumber(current->right, local_id_map);
             break;
         case AST_NUMBER:
             ret = ((ASTNumber*)current)->number;
             break;
         case AST_SMALLER:
-            ret = ( calNumber(current->left) < calNumber(current->right) ? 1 : 0 );
+            ret = ( calNumber(current->left, local_id_map) < calNumber(current->right, local_id_map) ? 1 : 0 );
             break;
         case AST_GREATER:
-            ret = ( calNumber(current->left) < calNumber(current->right) ? 0 : 1 );
+            ret = ( calNumber(current->left, local_id_map) < calNumber(current->right, local_id_map) ? 0 : 1 );
             break;
         case AST_ID:
-            ret = ASTVisit(current)->number;
+            ret = ASTVisit(current, local_id_map)->number;
             break;
     }
     return ret;
 }
 
-bool calLogic(ASTNode *current){
+bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     if(!current) return true;
     bool ret;
     switch(current->type){
         case AST_AND:
-            ret = calLogic(current->left) && calLogic(current->right);
+            ret = calLogic(current->left, local_id_map) && calLogic(current->right, local_id_map);
             break;
         case AST_OR:
             if(current->right)
-                ret = calLogic(current->left) || calLogic(current->right);
+                ret = calLogic(current->left, local_id_map) || calLogic(current->right, local_id_map);
             else 
-                ret = calLogic(current->left);
+                ret = calLogic(current->left, local_id_map);
             break;
         case AST_NOT:
-            ret = !calLogic(current->left);
+            ret = !calLogic(current->left, local_id_map);
             break;
         case AST_GREATER:
         case AST_SMALLER:
-            ret = calNumber(current);
+            ret = calNumber(current, local_id_map);
             break;
         case AST_EQUAL:
             if(current->right){
-                if(calNumber(current->left) == calNumber(current->right->left))
-                    ret = calLogic(current->right);
+                if(calNumber(current->left, local_id_map) == calNumber(current->right->left, local_id_map))
+                    ret = calLogic(current->right, local_id_map);
                 else 
                     ret = false;
             }
@@ -280,7 +281,7 @@ bool calLogic(ASTNode *current){
             ret = ((ASTBoolVal*)current)->bool_val;
             break;
         case AST_ID:
-            ret = ASTVisit(current)->bool_val;
+            ret = ASTVisit(current, local_id_map)->bool_val;
             break;
     }
     return ret;
@@ -288,28 +289,62 @@ bool calLogic(ASTNode *current){
 
 void defineID(ASTNode *current){
     std::string defID = ((ASTId*)current->left)->id;
-    if(id_map[defID]){
-        std::cout << "Redefined id: defID\n";
+    if(global_id_map[defID]){
+        std::cout << "Redefined id: " << defID << "\n";
         exit(0);
     }
     else 
-        id_map[defID] = current->right;
+        global_id_map[defID] = current->right;
 }
 
-ASTVal* ASTVisit(ASTNode *current){
+ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*> &local_id_map){
+    ASTNode *fun_id = fun_exp->left;
+    ASTNode *fun_body = fun_exp->right;
+    ASTNode *param_tmp = param;
+    std::map<std::string, ASTNode*> new_id_map = local_id_map;
+    std::stack<ASTNode*> param_stk;
+    std::stack<std::string> id_stk;
+    if(!param)
+        return ASTVisit(fun_body, new_id_map);
+    
+    while(param_tmp){
+        ASTNode *tmp = (ASTNode *)ASTVisit(param_tmp->left, new_id_map);
+        param_stk.push(tmp);
+        param_tmp = param_tmp->right;
+    }
+    while(fun_id){
+        id_stk.push(((ASTId*)fun_id->left)->id);
+        fun_id = fun_id->right;
+    }
+
+    if(param_stk.size() == id_stk.size()) {
+        while(param_stk.size()){
+            new_id_map[id_stk.top()] = param_stk.top();
+            id_stk.pop();
+            param_stk.pop();
+        }
+    }
+    else {
+        std::cout << "parameter numbers not match\n";
+        exit(0);
+    }
+    return ASTVisit(fun_body, new_id_map);
+}
+
+ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     if(!current) return NULL;
     ASTVal *ret = (ASTVal*)malloc(sizeof(ASTVal));
     switch(current->type){
         case AST_ROOT:
-            ASTVisit(current->left);
-            ASTVisit(current->right);
+            ASTVisit(current->left, local_id_map);
+            ASTVisit(current->right, local_id_map);
             break;
         case AST_PNUMBER:
-            ret = ASTVisit(current->left);
+            ret = ASTVisit(current->left, local_id_map);
             std::cout << ret->number << "\n";
             break;
         case AST_PBOOLVAL:
-            ret = ASTVisit(current->left);
+            ret = ASTVisit(current->left, local_id_map);
             std::cout << (ret->bool_val ? "#t" : "#f" ) << "\n";
             break;
         case AST_PLUS:
@@ -318,7 +353,8 @@ ASTVal* ASTVisit(ASTNode *current){
         case AST_DIVIDE:
         case AST_MODULES:
         case AST_NUMBER:
-            ret->number = calNumber(current);
+            ret->type = AST_NUMBER;
+            ret->number = calNumber(current, local_id_map);
             break;
         case AST_GREATER:
         case AST_SMALLER:
@@ -327,13 +363,26 @@ ASTVal* ASTVisit(ASTNode *current){
         case AST_OR:
         case AST_NOT:
         case AST_BOOLVAL:
-            ret->bool_val = calLogic(current);
+            ret->type = AST_BOOLVAL;
+            ret->bool_val = calLogic(current, local_id_map);
             break;
         case AST_DEFINE:
             defineID(current);
             break;
         case AST_ID:
-            ret = ASTVisit(id_map[((ASTId*)current)->id]);
+            if(!local_id_map[((ASTId*)current)->id])
+                std::cout << "Undefined id: " << ((ASTId*)current)->id << "\n";
+            else
+                ret = ASTVisit(local_id_map[((ASTId*)current)->id], local_id_map);
+            break;
+        case AST_FUN:
+            ret = ASTFun(current->left, NULL, local_id_map);
+            break;
+        case AST_FUN_DEF_CALL:
+            ret = ASTFun(current->left, current->right, local_id_map);
+            break;
+        case AST_FUN_CALL:
+            ret = ASTFun(current->left, current->right, local_id_map);
             break;
         default:
             std::cout << "error!\n";
@@ -348,6 +397,6 @@ void yyerror(const char *message) {
 int main(int argc, char *argv[]) {
         yyparse();
         std::cout << "parse ok\n";
-        ASTVisit(root);
+        ASTVisit(root, global_id_map);
         return(0);
 }

@@ -30,9 +30,9 @@ bool-val   #[t|f]
 "or"        { type_stk.push(AST_OR); return(_or); }
 "not"       { type_stk.push(AST_NOT); return(_not); }
 
-"define"    { type_stk.push(AST_DEFINE); return(_define); }
-"fun"       { type_stk.push(AST_FUN); return(_fun); }
-"if"        { type_stk.push(AST_IF); return(_if); }
+"define"        { type_stk.push(AST_DEFINE); return(_define); }
+"fun"|"lambda"  { type_stk.push(AST_FUN); return(_fun); }
+"if"            { type_stk.push(AST_IF); return(_if); }
 
 "print-num"  { type_stk.push(AST_PNUMBER); return(print_num); }
 "print-bool" { type_stk.push(AST_PBOOLVAL); return(print_bool); }
