@@ -62,3 +62,16 @@ EXP   : bool_val | number | VARIABLE | NUM_OP | LOGICAL_OP | FUN_EXP | FUN_CALL 
 ```
 NUM_OP : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER | EQUAL
 ```
+
+5. Logical Operations
+
+```
+LOGICAL_OP : AND_OP | OR_OP | NOT_OP
+```
+
+6. Define statement
+
+```
+DEF_STMT : '(' define VARIABLE EXP ')'
+VARIABLE : id 
+```
