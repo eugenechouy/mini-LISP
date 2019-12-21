@@ -1,1 +1,0 @@
-(print-num 1)

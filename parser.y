@@ -325,7 +325,7 @@ ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*>
         }
     }
     else {
-        std::cout << "parameter numbers not match\n";
+        std::cout << "parameter numbers not match: need " << id_stk.size() << " but " << param_stk.size()  << "\n";
         exit(0);
     }
     return ASTVisit(fun_body, new_id_map);
@@ -382,7 +382,10 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             ret = ASTFun(current->left, current->right, local_id_map);
             break;
         case AST_FUN_CALL:
-            ret = ASTFun(current->left, current->right, local_id_map);
+            if(!local_id_map[((ASTId*)current->left)->id])
+                std::cout << "Undefined function name: " << ((ASTId*)current)->id << "\n";
+            else
+                ret = ASTFun(local_id_map[((ASTId*)current->left)->id], current->right, local_id_map);
             break;
         default:
             std::cout << "error!\n";
@@ -395,8 +398,7 @@ void yyerror(const char *message) {
 }
 
 int main(int argc, char *argv[]) {
-        yyparse();
-        std::cout << "parse ok\n";
-        ASTVisit(root, global_id_map);
-        return(0);
+    yyparse();  
+    ASTVisit(root, global_id_map);
+    return(0);
 }

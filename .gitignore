@@ -3,3 +3,4 @@
 lex.yy.* 
 parser.tab.*
 output.txt
+mini-lisp
