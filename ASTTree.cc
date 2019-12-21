@@ -144,14 +144,14 @@ bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     return ret;
 }
 
-void defineID(ASTNode *current){
+void defineID(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     std::string defID = ((ASTId*)current->left)->id;
-    if(global_id_map[defID]){
+    if(local_id_map[defID]){
         std::cout << "Redefined id: " << defID << "\n";
         exit(0);
     }
     else 
-        global_id_map[defID] = current->right;
+        local_id_map[defID] = current->right;
 }
 
 ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*> &local_id_map){
@@ -232,7 +232,7 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             ret->bool_val = calLogic(current, local_id_map);
             break;
         case AST_DEFINE:
-            defineID(current);
+            defineID(current, local_id_map);
             break;
         case AST_ID:
             if(!local_id_map[((ASTId*)current)->id])
@@ -252,11 +252,16 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             else
                 ret = ASTFun(local_id_map[((ASTId*)current->left)->id], current->right, local_id_map);
             break;
+        case AST_FUN_BODY:
+            ASTVisit(current->left, local_id_map);
+            ret = ASTVisit(current->right, local_id_map);
+            break;
         case AST_IF:
             ret = ASTVisit(ASTIfstmt(current, local_id_map), local_id_map);
             break;
         default:
-            std::cout << "error!\n";
+            std::cout << "unexpected error!\n";
+            exit(0);
     }
     return ret;
 }

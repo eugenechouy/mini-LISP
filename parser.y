@@ -125,11 +125,14 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                 }
                 ;
         FUN_BODY: EXP 
+                | DEF_STMT EXP {
+                    type_stk.push(AST_FUN_BODY);
+                    $$ = constructAST($1, $2);
+                }
                 ;
         FUN_CALL: '(' FUN_EXP PARAMS ')' {
                     type_stk.push(AST_FUN_DEF_CALL);
                     $$ = constructAST($2, $3);
-
                 }
                 | '(' FUN_NAME PARAMS ')' {
                     type_stk.push(AST_FUN_CALL);

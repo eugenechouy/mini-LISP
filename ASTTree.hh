@@ -14,7 +14,7 @@ enum ASTType {
     AST_PLUS, AST_MINUS, AST_MULTIPLY, AST_DIVIDE, AST_MODULES, AST_GREATER, AST_SMALLER, AST_EQUAL,
     AST_AND, AST_OR, AST_NOT,
     AST_DEFINE, AST_FUN, AST_IF,
-    AST_FUN_DEF_CALL, AST_FUN_CALL
+    AST_FUN_DEF_CALL, AST_FUN_CALL, AST_FUN_BODY
 };
 
 class ASTNode {
@@ -60,6 +60,6 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
 ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*> &local_id_map);
 int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
 bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
-void defineID(ASTNode *current);
+void defineID(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
 
 #endif
