@@ -142,6 +142,14 @@ ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*>
     return ASTVisit(fun_body, new_id_map);
 }
 
+ASTNode* ASTIfstmt(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
+    bool result = calLogic(((ASTIf*)current)->deter, local_id_map);
+    if(result)
+        return current->left;
+    else 
+        return current->right;
+}
+
 ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     if(!current) return NULL;
     ASTVal *ret = (ASTVal*)malloc(sizeof(ASTVal));
@@ -197,6 +205,9 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
                 std::cout << "Undefined function name: " << ((ASTId*)current)->id << "\n";
             else
                 ret = ASTFun(local_id_map[((ASTId*)current->left)->id], current->right, local_id_map);
+            break;
+        case AST_IF:
+            ret = ASTVisit(ASTIfstmt(current, local_id_map), local_id_map);
             break;
         default:
             std::cout << "error!\n";

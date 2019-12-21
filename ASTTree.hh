@@ -1,5 +1,5 @@
-#ifndef ASTNODE_H
-#define ASTNODE_H
+#ifndef ASTNODE_HH
+#define ASTNODE_HH
 
 #include <iostream>
 #include <string>
@@ -45,9 +45,16 @@ public:
     std::string id;
 };
 
+class ASTIf : public ASTNode{
+public:
+    ASTNode *deter;
+};
+
 extern std::stack<ASTType> type_stk;
 extern std::map<std::string, ASTNode*> global_id_map;
+
 ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3);
+ASTNode* ASTIfstmt(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
 ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
 ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*> &local_id_map);
 int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);

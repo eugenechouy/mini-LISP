@@ -17,16 +17,6 @@
     ASTNode *node;
 }
 
-/*
-%type<intVal> PROGRAM 
-%type<intVal> STMT STMTS DEF_STMT PRINT_STMT
-%type<intVal> EXP EXPS  
-%type<intVal> IF_EXP THAN_EXP ELSE_EXP
-%type<intVal> VARIABLE VARIABLES
-%type<intVal> NUM_OP LOGICAL_OP 
-%type<intVal> FUN_EXP FUN_CALL FUN_ID FUN_BODY FUN_NAME PARAM PARAMS
-*/
-
 %type<node> PROGRAM 
 %type<node> STMT STMTS PRINT_STMT DEF_STMT
 %type<node> EXP EXPS 
@@ -36,13 +26,18 @@
 %type<node> VARIABLE VARIABLES
 %type<node> PARAM PARAMS
 %type<node> FUN_EXP FUN_CALL FUN_ID FUN_BODY FUN_NAME
+%type<node> IF_EXP TEST_EXP THAN_EXP ELSE_EXP
 
-%token print_num print_bool
 %token<intVal> _number
 %token<boolVal> _bool_val
 %token<id> _id
+%token print_num print_bool _define _fun _if
 
-%left '+' '-' '*' '/' _mod '>' '<' '=' _and _or _not _define _fun _if
+%left '>' '<' '='
+%left '+' '-' 
+%left '*' '/' _mod 
+%left _and _or _not
+%left '(' ')' 
 
 %%
 PROGRAM         : STMT STMTS {
@@ -81,7 +76,6 @@ EXPS            : EXP EXPS {
                     $$ = NULL; 
                 }
                 ;
-/* EXP             :  | IF_EXP ; */
 EXP             : _bool_val {
                     ASTBoolVal *new_node = (ASTBoolVal*)malloc(sizeof(ASTBoolVal));
                     new_node->type = AST_BOOLVAL;
@@ -94,7 +88,7 @@ EXP             : _bool_val {
                     new_node->number = $1;
                     $$ = (ASTNode*)new_node;
                 }
-                | NUM_OP | LOGICAL_OP | VARIABLE | FUN_EXP | FUN_CALL
+                | NUM_OP | LOGICAL_OP | VARIABLE | FUN_EXP | FUN_CALL | IF_EXP
                 ;
 NUM_OP          : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER | EQUAL ;
         PLUS    : '(' '+' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
@@ -164,18 +158,21 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                     $$ = NULL;
                 }
                 ;
-IF_EXP          : '(' _if TEST_EXP THAN_EXP ELSE_EXP ')'
-        TEST_EXP: EXP {
-
+IF_EXP          : '(' _if TEST_EXP THAN_EXP ELSE_EXP ')' {
+                    ASTIf *new_node = (ASTIf*)malloc(sizeof(ASTIf));
+                    new_node->type = type_stk.top();
+                    new_node->deter = $3;
+                    new_node->left = $4;
+                    new_node->right = $5;
+                    type_stk.pop();
+                    $$ = (ASTNode*)new_node;
                 }
                 ;
-        THAN_EXP: EXP {
-
-                }
+        TEST_EXP: EXP 
                 ;
-        ELSE_EXP: EXP {
-
-                }
+        THAN_EXP: EXP 
+                ;
+        ELSE_EXP: EXP 
                 ;
 %%
 
