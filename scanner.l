@@ -1,5 +1,5 @@
 %{
-    #include "ASTNode.h"
+    #include "ASTTree.hh"
     #include "parser.tab.hh"
 
     extern "C" {
