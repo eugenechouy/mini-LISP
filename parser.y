@@ -18,7 +18,7 @@
 }
 
 %type<node> PROGRAM 
-%type<node> STMT STMTS PRINT_STMT DEF_STMT
+%type<node> STMT STMTS PRINT_STMT DEF_STMT DEF_STMTS
 %type<node> EXP EXPS 
 %type<node> NUM_OP LOGICAL_OP 
 %type<node> PLUS MINUS MULTIPLY DIVIDE MODULES GREATER SMALLER EQUAL
@@ -114,6 +114,12 @@ DEF_STMT        : '(' _define VARIABLE EXP ')' {
                     new_node->type = AST_ID;
                     new_node->id = std::string($1);
                     $$ = (ASTNode*)new_node;
+                }
+                ;
+DEF_STMTS       : DEF_STMT DEF_STMTS {
+                }
+                | { 
+                    $$ = NULL; 
                 }
                 ;
 FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
