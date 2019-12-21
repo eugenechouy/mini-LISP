@@ -42,13 +42,13 @@
 %%
 PROGRAM         : STMT STMTS {
                     type_stk.push(AST_ROOT);
-                    $$ = constructAST($1, $2, NULL);
+                    $$ = constructAST($1, $2);
                     root = $$;
                 }
                 ;
 STMTS           : STMT STMTS {
                     type_stk.push(AST_ROOT);
-                    $$ = constructAST($1, $2, NULL);
+                    $$ = constructAST($1, $2);
                 }
                 | { 
                     $$ = NULL; 
@@ -58,11 +58,11 @@ STMT            : EXP | DEF_STMT | PRINT_STMT ;
 
 PRINT_STMT      : '(' print_num EXP ')' {
                     type_stk.push(AST_PNUMBER); 
-                    $$ = constructAST($3, NULL, NULL);
+                    $$ = constructAST($3, NULL);
                 }
                 | '(' print_bool EXP ')' {
                     type_stk.push(AST_PBOOLVAL); 
-                    $$ = constructAST($3, NULL, NULL);
+                    $$ = constructAST($3, NULL);
                 }
                 ;
 EXPS            : EXP EXPS {
@@ -92,21 +92,21 @@ EXP             : _bool_val {
                 ;
 NUM_OP          : PLUS | MINUS | MULTIPLY | DIVIDE | MODULES | GREATER | SMALLER | EQUAL ;
         PLUS    : '(' '+' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
-        MINUS   : '(' '-' EXP EXP ')' { $$ = constructAST($3, $4, NULL); };
+        MINUS   : '(' '-' EXP EXP ')' { $$ = constructAST($3, $4); };
         MULTIPLY: '(' '*' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
-        DIVIDE  : '(' '/' EXP EXP ')' { $$ = constructAST($3, $4, NULL); };
-        MODULES : '(' _mod EXP EXP ')' { $$ = constructAST($3, $4, NULL); };
-        GREATER : '(' '>' EXP EXP ')' { $$ = constructAST($3, $4, NULL); };
-        SMALLER : '(' '<' EXP EXP ')' { $$ = constructAST($3, $4, NULL); };
+        DIVIDE  : '(' '/' EXP EXP ')' { $$ = constructAST($3, $4); };
+        MODULES : '(' _mod EXP EXP ')' { $$ = constructAST($3, $4); };
+        GREATER : '(' '>' EXP EXP ')' { $$ = constructAST($3, $4); };
+        SMALLER : '(' '<' EXP EXP ')' { $$ = constructAST($3, $4); };
         EQUAL   : '(' '=' EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
 
 LOGICAL_OP      : AND_OP | OR_OP | NOT_OP ;
         AND_OP  : '(' _and EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
         OR_OP   : '(' _or EXP EXP EXPS ')' { $$ = constructAST($3, $4, $5); };
-        NOT_OP  : '(' _not EXP ')' { $$ = constructAST($3, NULL, NULL); };
+        NOT_OP  : '(' _not EXP ')' { $$ = constructAST($3, NULL); };
 
 DEF_STMT        : '(' _define VARIABLE EXP ')' {
-                    $$ = constructAST($3, $4, NULL);
+                    $$ = constructAST($3, $4);
                 }
                 ;
         VARIABLE: _id { 
@@ -117,7 +117,7 @@ DEF_STMT        : '(' _define VARIABLE EXP ')' {
                 }
                 ;
 FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
-                    $$ = constructAST($3, $4, NULL);
+                    $$ = constructAST($3, $4);
                 }
                 ;
         FUN_ID  : '(' VARIABLES ')' {
@@ -128,12 +128,12 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                 ;
         FUN_CALL: '(' FUN_EXP PARAMS ')' {
                     type_stk.push(AST_FUN_DEF_CALL);
-                    $$ = constructAST($2, $3, NULL);
+                    $$ = constructAST($2, $3);
 
                 }
                 | '(' FUN_NAME PARAMS ')' {
                     type_stk.push(AST_FUN_CALL);
-                    $$ = constructAST($2, $3, NULL);
+                    $$ = constructAST($2, $3);
                 }
                 ;
         FUN_NAME: VARIABLE 
@@ -142,7 +142,7 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                 ;
         PARAMS : PARAM PARAMS {
                     type_stk.push(AST_NUMBER);
-                    $$ = constructAST($1, $2, NULL);
+                    $$ = constructAST($1, $2);
                 }
                 | {
                     $$ = NULL;
@@ -152,7 +152,7 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                 ;
         VARIABLES: VARIABLE VARIABLES {
                     type_stk.push(AST_ID);
-                    $$ = constructAST($1, $2, NULL);
+                    $$ = constructAST($1, $2);
                 }
                 | {
                     $$ = NULL;

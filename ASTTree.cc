@@ -1,18 +1,23 @@
 #include "ASTTree.hh"
 
+ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2){
+    ASTNode *new_node = (ASTNode*)malloc(sizeof(ASTNode));
+    new_node->type = type_stk.top();
+    new_node->left = exp1;
+    new_node->right = exp2;
+    type_stk.pop();
+    return new_node;
+}
+
 ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3){
     ASTNode *new_node = (ASTNode*)malloc(sizeof(ASTNode));
     new_node->type = type_stk.top();
     new_node->left = exp1;
-    if(exp3){
-        ASTNode *new_node_right = (ASTNode*)malloc(sizeof(ASTNode));
-        new_node_right->type = type_stk.top();
-        new_node_right->left = exp2;
-        new_node_right->right = exp3;
-        new_node->right = new_node_right;
-    } else {
-        new_node->right = exp2;
-    }
+    ASTNode *new_node_right = (ASTNode*)malloc(sizeof(ASTNode));
+    new_node_right->type = type_stk.top();
+    new_node_right->left = exp2;
+    new_node_right->right = exp3;
+    new_node->right = new_node_right;
     type_stk.pop();
     return new_node;
 }
@@ -51,11 +56,35 @@ int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
         case AST_GREATER:
             ret = ( calNumber(current->left, local_id_map) < calNumber(current->right, local_id_map) ? 0 : 1 );
             break;
+        case AST_ROOT:
+        case AST_DEFINE:
+        case AST_IF:
+        case AST_PNUMBER:
+        case AST_PBOOLVAL:
+        case AST_EQUAL:
+        case AST_AND:
+        case AST_OR:
+        case AST_NOT:
+        case AST_BOOLVAL:
         case AST_ID:
+        case AST_FUN:
+        case AST_FUN_DEF_CALL:
+        case AST_FUN_CALL:
             ret = ASTVisit(current, local_id_map)->number;
             break;
     }
     return ret;
+}
+
+bool ASTEqual(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
+    if(current->right){
+        if(calNumber(current->left, local_id_map) == calNumber(current->right->left, local_id_map))
+            return ASTEqual(current->right, local_id_map);
+        else 
+            return false;
+    }
+    else 
+        return true;
 }
 
 bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
@@ -79,19 +108,26 @@ bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
             ret = calNumber(current, local_id_map);
             break;
         case AST_EQUAL:
-            if(current->right){
-                if(calNumber(current->left, local_id_map) == calNumber(current->right->left, local_id_map))
-                    ret = calLogic(current->right, local_id_map);
-                else 
-                    ret = false;
-            }
-            else
-                ret = true;
+            ret = ASTEqual(current, local_id_map);
             break;
         case AST_BOOLVAL:
             ret = ((ASTBoolVal*)current)->bool_val;
             break;
+        case AST_ROOT:
+        case AST_DEFINE:
+        case AST_IF:
+        case AST_PNUMBER:
+        case AST_PBOOLVAL:
+        case AST_PLUS:
+        case AST_MINUS:
+        case AST_MULTIPLY:
+        case AST_DIVIDE:
+        case AST_MODULES:
+        case AST_NUMBER:
         case AST_ID:
+        case AST_FUN:
+        case AST_FUN_DEF_CALL:
+        case AST_FUN_CALL:
             ret = ASTVisit(current, local_id_map)->bool_val;
             break;
     }

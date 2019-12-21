@@ -90,3 +90,12 @@ VARIABLES: VARIABLE VARIABLES
 LAST_EXP : EXP
 FUN_NAME : id
 ```
+
+8. If Expression
+
+```
+IF_EXP  : '(' _if TEST_EXP THAN_EXP ELSE_EXP ')' 
+TEST_EXP: EXP             
+THAN_EXP: EXP             
+ELSE_EXP: EXP 
+```
