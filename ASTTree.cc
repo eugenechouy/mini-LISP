@@ -25,6 +25,7 @@ ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3){
 int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     if(!current) return 1;
     int ret;
+    ASTVal *tmp;
     switch(current->type){
         case AST_PLUS:
             if(current->right)
@@ -51,27 +52,28 @@ int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
             ret = ((ASTNumber*)current)->number;
             break;
         case AST_SMALLER:
-            ret = ( calNumber(current->left, local_id_map) < calNumber(current->right, local_id_map) ? 1 : 0 );
-            break;
         case AST_GREATER:
-            ret = ( calNumber(current->left, local_id_map) < calNumber(current->right, local_id_map) ? 0 : 1 );
-            break;
-        case AST_ROOT:
-        case AST_DEFINE:
-        case AST_IF:
-        case AST_PNUMBER:
-        case AST_PBOOLVAL:
         case AST_EQUAL:
         case AST_AND:
         case AST_OR:
         case AST_NOT:
         case AST_BOOLVAL:
-        case AST_ID:
+            std::cout << "Type Error: Expect 'number' but got 'boolean'\n";
+            exit(0);
+            break;
         case AST_FUN:
         case AST_FUN_DEF_CALL:
         case AST_FUN_CALL:
-            ret = ASTVisit(current, local_id_map)->number;
+        case AST_ID:
+            tmp = ASTVisit(current, local_id_map);
+            if(tmp->type != AST_NUMBER){
+                std::cout << "Type Error: Expect 'number' but got 'boolean'\n";
+                exit(0);
+            }
+            ret = tmp->number;
             break;
+        default:
+            ret = ASTVisit(current, local_id_map)->number;
     }
     return ret;
 }
@@ -90,6 +92,7 @@ bool ASTEqual(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
 bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     if(!current) return true;
     bool ret;
+    ASTVal *tmp;
     switch(current->type){
         case AST_AND:
             ret = calLogic(current->left, local_id_map) && calLogic(current->right, local_id_map);
@@ -104,8 +107,10 @@ bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
             ret = !calLogic(current->left, local_id_map);
             break;
         case AST_GREATER:
+            ret = ( calNumber(current->left, local_id_map) > calNumber(current->right, local_id_map) );
+            break;
         case AST_SMALLER:
-            ret = calNumber(current, local_id_map);
+            ret = ( calNumber(current->left, local_id_map) < calNumber(current->right, local_id_map) );
             break;
         case AST_EQUAL:
             ret = ASTEqual(current, local_id_map);
@@ -113,23 +118,28 @@ bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
         case AST_BOOLVAL:
             ret = ((ASTBoolVal*)current)->bool_val;
             break;
-        case AST_ROOT:
-        case AST_DEFINE:
-        case AST_IF:
-        case AST_PNUMBER:
-        case AST_PBOOLVAL:
         case AST_PLUS:
         case AST_MINUS:
         case AST_MULTIPLY:
         case AST_DIVIDE:
         case AST_MODULES:
         case AST_NUMBER:
-        case AST_ID:
+            std::cout << "Type Error: Expect 'boolean' but got 'number'\n";
+            exit(0);
+            break;
         case AST_FUN:
         case AST_FUN_DEF_CALL:
         case AST_FUN_CALL:
-            ret = ASTVisit(current, local_id_map)->bool_val;
+        case AST_ID:
+            tmp = ASTVisit(current, local_id_map);
+            if(tmp->type != AST_BOOLVAL){
+                std::cout << "Type Error: Expect 'number' but got 'boolean'\n";
+                exit(0);
+            }
+            ret = tmp->bool_val;
             break;
+        default:
+            ret = ASTVisit(current, local_id_map)->bool_val;
     }
     return ret;
 }
