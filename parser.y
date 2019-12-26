@@ -18,14 +18,14 @@
 }
 
 %type<node> PROGRAM 
-%type<node> STMT STMTS PRINT_STMT DEF_STMT DEF_STMTS
+%type<node> STMT STMTS PRINT_STMT DEF_STMT
 %type<node> EXP EXPS 
 %type<node> NUM_OP LOGICAL_OP 
 %type<node> PLUS MINUS MULTIPLY DIVIDE MODULES GREATER SMALLER EQUAL
 %type<node> AND_OP OR_OP NOT_OP
 %type<node> VARIABLE VARIABLES
 %type<node> PARAM PARAMS
-%type<node> FUN_EXP FUN_CALL FUN_ID FUN_BODY FUN_NAME
+%type<node> FUN_EXP FUN_CALL FUN_ID FUN_BODY FUN_NAME FUN_STMT FUN_STMTS
 %type<node> IF_EXP TEST_EXP THAN_EXP ELSE_EXP
 
 %token<intVal> _number
@@ -116,12 +116,15 @@ DEF_STMT        : '(' _define VARIABLE EXP ')' {
                     $$ = (ASTNode*)new_node;
                 }
                 ;
-DEF_STMTS       : DEF_STMT DEF_STMTS {
+FUN_STMTS       : FUN_STMT FUN_STMTS {
+                    type_stk.push(AST_FUN_BODY);
+                    $$ = constructAST($1, $2);
                 }
                 | { 
                     $$ = NULL; 
                 }
                 ;
+FUN_STMT        : EXP | DEF_STMT;
 FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                     $$ = constructAST($3, $4);
                 }
@@ -130,11 +133,7 @@ FUN_EXP         : '(' _fun FUN_ID FUN_BODY ')' {
                     $$ = $2;
                 }
                 ;
-        FUN_BODY: EXP 
-                | DEF_STMT EXP {
-                    type_stk.push(AST_FUN_BODY);
-                    $$ = constructAST($1, $2);
-                }
+        FUN_BODY: FUN_STMTS
                 ;
         FUN_CALL: '(' FUN_EXP PARAMS ')' {
                     type_stk.push(AST_FUN_DEF_CALL);

@@ -188,6 +188,14 @@ ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*>
     return ASTVisit(fun_body, new_id_map);
 }
 
+ASTVal* ASTFunBody(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
+    while(current->right){
+        ASTVisit(current->left, local_id_map);
+        current = current->right;
+    }
+    return ASTVisit(current->left, local_id_map);
+}
+
 ASTNode* ASTIfstmt(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
     bool result = calLogic(((ASTIf*)current)->deter, local_id_map);
     if(result)
@@ -235,8 +243,10 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             defineID(current, local_id_map);
             break;
         case AST_ID:
-            if(!local_id_map[((ASTId*)current)->id])
+            if(!local_id_map[((ASTId*)current)->id]){
                 std::cout << "Undefined id: " << ((ASTId*)current)->id << "\n";
+                exit(0);
+            }
             else
                 ret = ASTVisit(local_id_map[((ASTId*)current)->id], local_id_map);
             break;
@@ -247,14 +257,15 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             ret = ASTFun(current->left, current->right, local_id_map);
             break;
         case AST_FUN_CALL:
-            if(!local_id_map[((ASTId*)current->left)->id])
-                std::cout << "Undefined function name: " << ((ASTId*)current)->id << "\n";
+            if(!local_id_map[((ASTId*)current->left)->id]){
+                std::cout << "Undefined function name: " << ((ASTId*)current->left)->id << "\n";
+                exit(0);     
+            }
             else
                 ret = ASTFun(local_id_map[((ASTId*)current->left)->id], current->right, local_id_map);
             break;
         case AST_FUN_BODY:
-            ASTVisit(current->left, local_id_map);
-            ret = ASTVisit(current->right, local_id_map);
+            ret = ASTFunBody(current, local_id_map);
             break;
         case AST_IF:
             ret = ASTVisit(ASTIfstmt(current, local_id_map), local_id_map);
