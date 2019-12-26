@@ -165,6 +165,10 @@ ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*>
         return ASTVisit(fun_body, new_id_map);
     
     while(param_tmp){
+        if(param_tmp->left->type == AST_FUN){
+            std::cout << "feature 4\n";
+            exit(0);
+        }
         ASTNode *tmp = (ASTNode *)ASTVisit(param_tmp->left, new_id_map);
         param_stk.push(tmp);
         param_tmp = param_tmp->right;
@@ -261,8 +265,12 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
                 std::cout << "Undefined function name: " << ((ASTId*)current->left)->id << "\n";
                 exit(0);     
             }
-            else
+            else if(local_id_map[((ASTId*)current->left)->id]->type == AST_FUN)
                 ret = ASTFun(local_id_map[((ASTId*)current->left)->id], current->right, local_id_map);
+            else {
+                std::cout << "feature 4\n";
+                exit(0);
+            }
             break;
         case AST_FUN_BODY:
             ret = ASTFunBody(current, local_id_map);
