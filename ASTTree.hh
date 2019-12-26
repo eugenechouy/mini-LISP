@@ -55,11 +55,6 @@ extern std::map<std::string, ASTNode*> global_id_map;
 
 ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2, ASTNode *exp3);
 ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2);
-ASTNode* ASTIfstmt(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
 ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
-ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*> &local_id_map);
-int calNumber(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
-bool calLogic(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
-void defineID(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map);
 
 #endif

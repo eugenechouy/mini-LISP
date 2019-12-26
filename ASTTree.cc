@@ -1,5 +1,7 @@
 #include "ASTTree.hh"
 
+std::stack<ASTNode*> global_param_stk;
+
 ASTNode* constructAST(ASTNode *exp1, ASTNode *exp2){
     ASTNode *new_node = (ASTNode*)malloc(sizeof(ASTNode));
     new_node->type = type_stk.top();
@@ -161,16 +163,29 @@ ASTVal* ASTFun(ASTNode *fun_exp, ASTNode *param, std::map<std::string, ASTNode*>
     std::map<std::string, ASTNode*> new_id_map = local_id_map;
     std::stack<ASTNode*> param_stk;
     std::stack<std::string> id_stk;
-    if(!param)
+    if(!param){
+        if(global_param_stk.size()){
+            while(fun_id){
+                id_stk.push(((ASTId*)fun_id->left)->id);
+                fun_id = fun_id->right;
+            }
+            while(id_stk.size()){
+                new_id_map[id_stk.top()] = global_param_stk.top();
+                id_stk.pop();
+                global_param_stk.pop();
+            }
+            return ASTVisit(fun_body, new_id_map);
+        }
         return ASTVisit(fun_body, new_id_map);
+    }
     
     while(param_tmp){
         if(param_tmp->left->type == AST_FUN){
-            std::cout << "feature 4\n";
-            exit(0);
+            param_stk.push(param_tmp->left);
+        } else {
+            ASTNode *tmp = (ASTNode *)ASTVisit(param_tmp->left, new_id_map);
+            param_stk.push(tmp);
         }
-        ASTNode *tmp = (ASTNode *)ASTVisit(param_tmp->left, new_id_map);
-        param_stk.push(tmp);
         param_tmp = param_tmp->right;
     }
     while(fun_id){
@@ -198,6 +213,25 @@ ASTVal* ASTFunBody(ASTNode *current, std::map<std::string, ASTNode*> &local_id_m
         current = current->right;
     }
     return ASTVisit(current->left, local_id_map);
+}
+
+ASTVal* ASTFunClosure(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
+    ASTNode *tmp = current;
+    std::map<std::string, ASTNode*> new_id_map = local_id_map;
+    while(local_id_map[((ASTId*)tmp->left)->id]->type != AST_FUN){
+        ASTNode *param = tmp->right;
+        while(param){
+            if(param->left->type == AST_FUN){
+                global_param_stk.push(param->left);
+            } else {
+                ASTNode *tmp = (ASTNode *)ASTVisit(param->left, new_id_map);
+                global_param_stk.push(tmp);
+            }
+            param = param->right;
+        }
+        tmp = local_id_map[((ASTId*)tmp->left)->id];
+    }
+    return ASTFun(local_id_map[((ASTId*)tmp->left)->id], tmp->right, local_id_map);
 }
 
 ASTNode* ASTIfstmt(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map){
@@ -254,8 +288,8 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             else
                 ret = ASTVisit(local_id_map[((ASTId*)current)->id], local_id_map);
             break;
-        case AST_FUN:
-            ret = ASTFun(current->left, NULL, local_id_map);
+        case AST_FUN: 
+            ret = ASTFun(current, NULL, local_id_map);
             break;
         case AST_FUN_DEF_CALL:
             ret = ASTFun(current->left, current->right, local_id_map);
@@ -268,8 +302,11 @@ ASTVal* ASTVisit(ASTNode *current, std::map<std::string, ASTNode*> &local_id_map
             else if(local_id_map[((ASTId*)current->left)->id]->type == AST_FUN)
                 ret = ASTFun(local_id_map[((ASTId*)current->left)->id], current->right, local_id_map);
             else {
-                std::cout << "feature 4\n";
-                exit(0);
+                ret = ASTFunClosure(current, local_id_map);
+                if(global_param_stk.size()){
+                    std::cout << "parameter numbers not match: " << global_param_stk.size() << " parameters not used\n";
+                    exit(0);
+                }
             }
             break;
         case AST_FUN_BODY:
